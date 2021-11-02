@@ -52,21 +52,28 @@ def itemTitle_desCheck(query, label_match, enwiki_repo):
         enwiki_repo ([site repo]): the site repository
     """
     
-    for qid_check in label_match:
+    if label_match !=None:
 
-                item = pywikibot.ItemPage(enwiki_repo, qid_check)
-                wd_item=item.get()
+    
+        for qid_check in label_match:
+            print("q", query[1])
+
+            item = pywikibot.ItemPage(enwiki_repo, qid_check)
+            wd_item=item.get()
 
 
 
-                descriptions=wd_item['descriptions']['en']
-                x=re.findall(query[1], descriptions,flags=re.IGNORECASE)
+            descriptions=wd_item['descriptions']['en']
+            x=re.findall(query[1], descriptions,flags=re.IGNORECASE)
+            print("x", x)
+            print("I am here")
 
-                for value in x:
-                    print("v", value)
-                    if value.lower()==query[1].lower():
-                        print(f"QID Match: {query[0]}-->{value}-->{qid_check}")
-
+            for value in x:
+                print("v", value)
+                if value.lower()==query[1].lower():
+                    print(f"QID Match: {query[0]}-->{value}-->{qid_check}")
+    else:
+        print("No label match for the Article/Item title")
 
 def itemtitle_label_check(query, dataEntries, enwiki_repo):
     """Item label check match
@@ -100,23 +107,33 @@ def itemtitle_label_check(query, dataEntries, enwiki_repo):
         return label_match 
     elif len(label_match)==0: 
         print("No match found in Wikidata Connected Pages")
+        unconnected_pages_count=unconnected(query)
+        if unconnected_pages_count==0:
+            print("Match not found in Unconnected pages")
     elif len(label_match)==1: 
         print(label_match[0])
+        return label_match
     
 
 # Unconnected pages
+def unconnected(query):
+    enwiki = pywikibot.Site('en', 'wikipedia')
+    enwp = pywikibot.Site('en', 'wikipedia')
+    enwd = pywikibot.Site('wikidata', 'wikidata')
+    targetcats = ['Category:Articles_without_Wikidata_item']
 
-# def unconnected():
-#     enwp = pywikibot.Site('en', 'wikipedia')
-#     enwd = pywikibot.Site('wikidata', 'wikidata')
-#     targetcats = ['Category:Articles_without_Wikidata_item']
-
-#     for targetcat in targetcats:
-#         cat = pywikibot.Category(enwp, targetcat)
-#         pages = enwiki.querypage('UnconnectedPages')
-#         pagey = pagegenerators.CategorizedPageGenerator(cat, recurse=False);
-#         print(pagey)
-#         
+    for targetcat in targetcats:
+        cat = pywikibot.Category(enwp, targetcat)
+        pages = enwiki.querypage('UnconnectedPages')
+        count=0
+        print(pages)
+        pagey = pagegenerators.CategorizedPageGenerator(cat, recurse=False)
+        for page in pagey:
+            if page.title()==query[0]:
+                print(f"Match found in unconnected---->{page.title()}")
+                count+=1
+                
+    return count
 
 
 def main():
