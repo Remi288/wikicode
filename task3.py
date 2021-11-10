@@ -1,9 +1,6 @@
 # Task 3
 # -------- Item/Article title and description use for the script------------
-# Ocean liner(item title)
-# --ship designed to transport people from one seaport to another(desc)
-# passenger ship(item title)
-# --watercraft intended to carry people onboard(desc)
+
 
 # Import modules
 import pywikibot
@@ -13,6 +10,15 @@ import requests
 import pprint
 import re 
 
+
+enwiki = pywikibot.Site('en', 'wikipedia')
+enwiki_repo = enwiki.data_repository()
+count = 0
+
+def create_item(enwiki, title):
+    new_item = pywikibot.ItemPage(enwiki_repo)
+    new_item.editLabels(labels={"en":title}, summary="Creating item")
+    return new_item.getID()
 
 def prettyPrint(variable):
     pp = pprint.PrettyPrinter(indent=4)
@@ -56,7 +62,6 @@ def itemTitle_desCheck(query, label_match, enwiki_repo):
 
     
         for qid_check in label_match:
-            print("q", query[1])
 
             item = pywikibot.ItemPage(enwiki_repo, qid_check)
             wd_item=item.get()
@@ -65,15 +70,12 @@ def itemTitle_desCheck(query, label_match, enwiki_repo):
 
             descriptions=wd_item['descriptions']['en']
             x=re.findall(query[1], descriptions,flags=re.IGNORECASE)
-            print("x", x)
-            print("I am here")
 
             for value in x:
-                print("v", value)
                 if value.lower()==query[1].lower():
                     print(f"QID Match: {query[0]}-->{value}-->{qid_check}")
     else:
-        print("No label match for the Article/Item title")
+        print("No description match for the Article/Item title")
 
 def itemtitle_label_check(query, dataEntries, enwiki_repo):
     """Item label check match
@@ -94,7 +96,6 @@ def itemtitle_label_check(query, dataEntries, enwiki_repo):
 
         try:
             label=wikidata_item['labels']['en']
-            print("label",label)
             if label==query[0]:
                 label_match.append(data['title'])
 
@@ -106,50 +107,45 @@ def itemtitle_label_check(query, dataEntries, enwiki_repo):
         itemTitle_desCheck(query, label_match, enwiki_repo)
         return label_match 
     elif len(label_match)==0: 
-        print("No match found in Wikidata Connected Pages")
-        unconnected_pages_count=unconnected(query)
-        if unconnected_pages_count==0:
-            print("Match not found in Unconnected pages")
+        print("No match found in Wikidata Connected Pages-->> creating new id")
+        new_item_id =create_item(enwiki, query)
+        print("newID------->", new_item_id)
+
     elif len(label_match)==1: 
         print(label_match[0])
         return label_match
     
 
 # Unconnected pages
-def unconnected(query):
-    enwiki = pywikibot.Site('en', 'wikipedia')
+def unconnected():
     enwp = pywikibot.Site('en', 'wikipedia')
     enwd = pywikibot.Site('wikidata', 'wikidata')
     targetcats = ['Category:Articles_without_Wikidata_item']
 
     for targetcat in targetcats:
         cat = pywikibot.Category(enwp, targetcat)
+        print("cat----", cat)
         pages = enwiki.querypage('UnconnectedPages')
         count=0
-        print(pages)
         pagey = pagegenerators.CategorizedPageGenerator(cat, recurse=False)
         for page in pagey:
-            if page.title()==query[0]:
-                print(f"Match found in unconnected---->{page.title()}")
-                count+=1
-                
-    return count
+            dataEntries = search_entities(enwiki_repo, page.title())
+            prettyPrint(dataEntries)
+            label_match = itemtitle_label_check(page.title(), dataEntries, enwiki_repo)
+            print(itemTitle_desCheck(page.title(), label_match, enwiki_repo))
+            count+=1
+            if count == 8:
+                break
+
+
+
 
 
 def main():
     # Connect to wikipedia
     enwiki = pywikibot.Site('en', 'wikipedia')
     enwiki_repo = enwiki.data_repository()
-    query_info = input("Article/item title or label ")
-    query = []
-    query.append(query_info)
-    if len(query) < 2:
-        adinfo = input("Additon-Info: Article/Item Desc ")
-        query.append(adinfo)
-    dataEntries = search_entities(enwiki_repo, query)
-    prettyPrint(dataEntries)
-    label_match = itemtitle_label_check(query, dataEntries, enwiki_repo)
-    print(itemTitle_desCheck(query, label_match, enwiki_repo))
+    print(unconnected())
 
 if __name__ == '__main__':
     main()
